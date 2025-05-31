@@ -1,0 +1,6 @@
+canvas-editor-client/node_modules
+canvas-editor-client/dist
+canvas-editor-client/.env
+canvas-editor-server/node_modules
+canvas-editor-server/dist
+canvas-editor-server/.env
