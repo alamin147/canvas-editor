@@ -8,6 +8,8 @@ import { PersistGate } from 'redux-persist/integration/react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import MainLayout from './layout/MainLayout.tsx'
 import Home from '@/pages/home/Home.tsx'
+import Login from './pages/login/Login.tsx'
+import Register from './pages/register/Register.tsx'
 
 const router=createBrowserRouter([
     {
@@ -19,8 +21,16 @@ const router=createBrowserRouter([
                 element: <Home />,
             }
         ],
-
         errorElement: <div>404 Not Found</div>,
+    }
+    ,
+    {
+        path: '/login',
+        element: <Login />,
+    },
+    {
+        path: '/register',
+        element: <Register />,
     }
 ])
 
