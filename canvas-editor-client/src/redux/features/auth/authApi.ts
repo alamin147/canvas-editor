@@ -14,13 +14,13 @@ const authApi = baseApi.injectEndpoints({
     registerUser: builder.mutation({
       query: (data) => {
         return {
-          url: "/auth/register",
+          url: "/auth/signup",
           method: "POST",
           body: data,
         };
       },
     }),
-    
+
 
   }),
 });
