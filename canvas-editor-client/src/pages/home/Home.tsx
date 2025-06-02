@@ -3,12 +3,9 @@ import { IoBookOutline } from "react-icons/io5";
 import { HiPencil } from "react-icons/hi2";
 import { IoIosCloudy } from "react-icons/io";
 import { FaArrowRightLong } from "react-icons/fa6";
-import { useCurrentToken } from "@/redux/features/auth/authSlice";
-import { useAppSelector } from "@/redux/hooks";
 
 const Home = () => {
-    const token = useAppSelector(useCurrentToken);
-    console.log(token);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col">
