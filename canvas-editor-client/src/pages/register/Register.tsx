@@ -61,8 +61,8 @@ const Register = () => {
     try {
         const response = await registerUser(registerData).unwrap();
         if (response.success) {
-            toast.success("Registration successful! Redirecting to login...");
-            navigate("/login");
+            toast.success("Registration successful!");
+            navigate("/");
         }
         else{
             toast.success("Something went wrong, please try again.");
@@ -161,7 +161,7 @@ const Register = () => {
 
 export default Register;
 
-const CustomFormFields = ({
+export const CustomFormFields = ({
   form,
   name,
   label,

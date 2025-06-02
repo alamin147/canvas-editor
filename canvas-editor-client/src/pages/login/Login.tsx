@@ -1,55 +1,65 @@
-
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useLoginUserMutation } from "@/redux/features/auth/authApi";
-import { useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { FiImage } from "react-icons/fi";
-
-// Login form schema
-const loginSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { CustomFormFields } from "../register/Register";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [loginUser, { isLoading, isSuccess, error, data }] = useLoginUserMutation();
+  const [loginUser, { isLoading }] = useLoginUserMutation();
 
   // Initialize form
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm({
     defaultValues: {
-      email: "",
-      password: "",
+      username: "admin",
+      password: "123456",
     },
   });
 
   // Handle form submission
-  const onSubmit = async (values: LoginFormValues) => {
-    await loginUser(values);
+  const onSubmit = async (values: any) => {
+    try {
+      const response = await loginUser(values).unwrap();
+      console.log(response);
+      if (response.success) {
+        toast.success("Login successful!");
+        navigate("/");
+      } else {
+        toast.error(
+          response?.data?.message
+            ? response?.data?.message
+            : "Something went wrong, please try again."
+        );
+        return;
+      }
+    } catch (error: any) {
+      // console.log(error);
+      toast.error(
+        error?.data?.message
+          ? error?.data?.message
+          : "Something went wrong, please try again."
+      );
+      console.error("Login error:", error);
+    }
   };
 
-  // Handle API response
-  useEffect(() => {
-    if (isSuccess) {
-      toast.success("Login successful!");
-      navigate("/");
-    }
-    if (error && 'data' in error) {
-      // @ts-ignore
-      toast.error(error?.data?.message || "Login failed. Please try again.");
-    }
-  }, [isSuccess, error, navigate]);
-
+  const fields = [
+    {
+      name: "username",
+      label: "Username",
+      placeholder: "johndoe",
+      type: "text",
+    },
+    {
+      name: "password",
+      label: "Password",
+      placeholder: "••••••••",
+      type: "password",
+    },
+  ];
   return (
     <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="w-full max-w-md space-y-6">
@@ -68,47 +78,23 @@ const Login = () => {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="example@email.com"
-                        type="email"
-                        className="border-gray-200 focus-visible:ring-blue-500"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="••••••••"
-                        type="password"
-                        className="border-gray-200 focus-visible:ring-blue-500"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {fields.map((f) => (
+                <CustomFormFields
+                  form={form}
+                  key={f.name}
+                  name={f.name}
+                  label={f.label}
+                  placeholder={f.placeholder}
+                  type={f.type}
+                />
+              ))}
 
               <div className="flex items-center justify-between">
                 <div className="text-sm">
-                  <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                  <Link
+                    to="/forgot-password"
+                    className="font-medium text-blue-600 hover:text-blue-500"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -125,7 +111,10 @@ const Login = () => {
               <div className="mt-4 text-center text-sm">
                 <p className="text-gray-600">
                   Don't have an account?{" "}
-                  <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                  <Link
+                    to="/register"
+                    className="font-medium text-blue-600 hover:text-blue-500"
+                  >
                     Sign up
                   </Link>
                 </p>
