@@ -6,10 +6,14 @@ import { useLoginUserMutation } from "@/redux/features/auth/authApi";
 import { toast } from "react-hot-toast";
 import { FiImage } from "react-icons/fi";
 import { CustomFormFields } from "../register/Register";
+import {jwtDecode} from "jwt-decode";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/redux/features/auth/authSlice";
 
 const Login = () => {
   const navigate = useNavigate();
   const [loginUser, { isLoading }] = useLoginUserMutation();
+  const dispatch = useDispatch();
 
   // Initialize form
   const form = useForm({
@@ -25,7 +29,10 @@ const Login = () => {
       const response = await loginUser(values).unwrap();
       console.log(response);
       if (response.success) {
+        const token = response?.data?.accessToken;
         toast.success("Login successful!");
+         const decoded = jwtDecode(token);
+        dispatch(setUser({ user: decoded, token }));
         navigate("/");
       } else {
         toast.error(
