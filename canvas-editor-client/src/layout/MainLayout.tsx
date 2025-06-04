@@ -45,20 +45,29 @@ const MainLayout = () => {
               <li>
                 <NavLink
                   to="/"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-blue-600 bg-blue-50 font-medium"
+                  
+                  className={({ isActive }) =>
+                    isActive
+                      ? "flex items-center gap-3 px-3 py-2.5 rounded-lg text-blue-600 bg-blue-50 font-medium"
+                      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                  }
                 >
                   <IoHomeOutline size={18} className="-mt-1" />
-                  Home
+                  <span>Home</span>
                 </NavLink>
               </li>
 
               <li>
                 <NavLink
                   to="/projects"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                  className={({ isActive }) =>
+                    isActive
+                      ? "flex items-center gap-3 px-3 py-2.5 rounded-lg text-blue-600 bg-blue-50 font-medium"
+                      : "flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                  }
                 >
                   <FaRegFolder size={18} className="-mt-0.5" />
-                  Projects
+                  <span>Projects</span>
                 </NavLink>
               </li>
             </ul>
