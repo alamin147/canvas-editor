@@ -10,6 +10,7 @@ import MainLayout from './layout/MainLayout.tsx'
 import Home from '@/pages/home/Home.tsx'
 import Login from './pages/login/Login.tsx'
 import Register from './pages/register/Register.tsx'
+import Project from './pages/project/Project.tsx'
 
 const router=createBrowserRouter([
     {
@@ -19,7 +20,11 @@ const router=createBrowserRouter([
             {
                 path: '/',
                 element: <Home />,
-            }
+            },
+            {
+                path: '/projects',
+                element: <Project />,
+            },
         ],
         errorElement: <div>404 Not Found</div>,
     }
