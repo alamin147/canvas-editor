@@ -12,6 +12,9 @@ import Login from './pages/login/Login.tsx'
 import Register from './pages/register/Register.tsx'
 import Project from './pages/project/Project.tsx'
 
+import CreateProject from './pages/project/CreateProject.tsx'
+import CanvasEditor from './pages/canvas-editor/CanvasEditor.tsx'
+
 const router=createBrowserRouter([
     {
         path: '/',
@@ -24,6 +27,14 @@ const router=createBrowserRouter([
             {
                 path: '/projects',
                 element: <Project />,
+            },
+            {
+                path: '/create-project',
+                element: <CreateProject />,
+            },
+            {
+                path: '/editor/:id',
+                element: <CanvasEditor />,
             },
         ],
         errorElement: <div>404 Not Found</div>,

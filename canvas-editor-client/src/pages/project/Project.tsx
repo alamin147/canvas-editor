@@ -1,7 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { FiImage } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 const Project = () => {
+  const navigate = useNavigate();
+
+  const handleCreateProject = () => {
+    navigate("/create-project");
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 ">
@@ -14,7 +21,9 @@ const Project = () => {
         <div></div>
         <div></div>
         <div className="flex justify-end items-center">
-          <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800">
+          <Button
+            onClick={handleCreateProject}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800">
             Create Project
           </Button>
         </div>
@@ -32,6 +41,7 @@ const Project = () => {
               <div
                 key={i}
                 className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => navigate(`/editor/${i}`)}
               >
                 <div className="h-32 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 border border-gray-200 flex items-center justify-center mb-4">
                   <FiImage className="h-12 w-12 text-blue-500" />
