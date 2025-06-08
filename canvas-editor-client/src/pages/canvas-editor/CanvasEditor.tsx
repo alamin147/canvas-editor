@@ -1,13 +1,22 @@
 import { Canvas, Circle, Rect, IText, Line, ActiveSelection } from 'fabric';
 import { useState, useRef, useEffect } from "react";
-import { FaRegSquare, FaRegCircle } from 'react-icons/fa';
+import { FaRegSquare, FaRegCircle, FaSave } from 'react-icons/fa';
 import { PiTextAa } from "react-icons/pi";
 import { TbLine } from "react-icons/tb";
 import { FaTrash } from "react-icons/fa";
 import { MdFormatColorFill, MdBorderColor } from 'react-icons/md';
 import { MdContentCopy, MdContentPaste } from 'react-icons/md';
 
+
+import { FaRegSave } from 'react-icons/fa';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useGetProjectQuery, useUpdateProjectMutation } from '@/redux/features/project/projectApi';
+import Loader from '@/components/ui/Loader';
+import { toast } from 'react-hot-toast';
+
 const CanvasEditor = () => {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [canvas, setCanvas]: any = useState();
     const [fillColor, setFillColor] = useState("#3498db");
@@ -17,6 +26,14 @@ const CanvasEditor = () => {
     const [selectedObjectColor, setSelectedObjectColor] = useState("#000000");
     const [selectedObjectType, setSelectedObjectType] = useState<"fill" | "stroke" | null>(null);
     const [copiedObjects, setCopiedObjects] = useState<any[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [projectTitle, setProjectTitle] = useState("");
+
+    // Get project data if editing an existing project
+    const { data: projectData, isLoading: isLoadingProject, isError: projectError } =
+        id && id !== 'new' ? useGetProjectQuery(id) : { data: null, isLoading: false, isError: false };
+
+    const [updateProject] = useUpdateProjectMutation();
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -25,12 +42,12 @@ const CanvasEditor = () => {
                 height: 600,
             });
 
-            initCanvas.backgroundColor= "#f8f9fa",
+            initCanvas.backgroundColor = "#f8f9fa";
             initCanvas.renderAll();
             setCanvas(initCanvas);
 
-
-            initCanvas.on('selection:created', (e:any) => {
+            // Set up event listeners
+            initCanvas.on('selection:created', (e: any) => {
                 setHasSelection(true);
                 const selectedObject = e.selected?.[0] || e.target;
                 if (selectedObject) {
@@ -38,7 +55,7 @@ const CanvasEditor = () => {
                 }
             });
 
-            initCanvas.on('selection:updated', (e:any) => {
+            initCanvas.on('selection:updated', (e: any) => {
                 setHasSelection(true);
                 const selectedObject = e.selected?.[0] || e.target;
                 if (selectedObject) {
@@ -51,6 +68,19 @@ const CanvasEditor = () => {
                 setSelectedObjectType(null);
             });
 
+            // Set up object modified event for auto-save functionality
+            initCanvas.on('object:modified', () => {
+                if (id && id !== 'new') {
+                    // Debounced auto-save - only save after 2 seconds of inactivity
+                    if (window.autoSaveTimer) {
+                        clearTimeout(window.autoSaveTimer);
+                    }
+                    window.autoSaveTimer = setTimeout(() => {
+                        saveCanvas();
+                    }, 2000);
+                }
+            });
+
             return () => {
                 initCanvas.dispose();
             };
@@ -58,50 +88,91 @@ const CanvasEditor = () => {
     }, []);
 
     useEffect(() => {
-        if (!canvas) return;
-
         const handleKeyDown = (e: KeyboardEvent) => {
-
-            if (document.activeElement?.tagName === 'INPUT' ||
-                document.activeElement?.tagName === 'TEXTAREA') {
-                return;
-            }
-
-
-            if ((e.key === 'Delete' || e.key === 'Backspace') && hasSelection) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                deleteSelectedObject();
-                return;
-            }
-
-
-            if (e.key === 'c' && (e.ctrlKey || e.metaKey) && hasSelection) {
-                e.preventDefault();
-                copySelectedObjects();
-                return;
-            }
-
-
-            if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                pasteObjects();
-                return;
-            }
-
-
-            if (e.key === 'd' && (e.ctrlKey || e.metaKey) && hasSelection) {
-                e.preventDefault();
-                copySelectedObjects();
-                setTimeout(() => pasteObjects(), 10);
-                return;
+                saveCanvas();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
+
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [hasSelection, canvas, copiedObjects]);
+    }, [canvas, id]);
+    useEffect(() => {
+        if (projectData?.data && canvas) {
+            try {
+                setProjectTitle(projectData.data.title);
+
+                if (projectData.data.backgroundColor) {
+                    canvas.backgroundColor = projectData.data.backgroundColor;
+                }
+
+                if (projectData.data.canvasData) {
+                    try {
+                        const canvasData = JSON.parse(projectData.data.canvasData);
+                        console.log("Loading canvas data:", canvasData);
+
+                        canvas.clear();
+
+                        canvas.loadFromJSON(canvasData, () => {
+                            canvas.renderAll();
+                            console.log('Canvas loaded from saved data');
+                        });
+                    } catch (error) {
+                        console.error("Error parsing canvas data:", error);
+                        toast.error("Failed to load canvas data");
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading canvas data:', error);
+                toast.error('Failed to load project data');
+            }
+        }
+    }, [projectData, canvas]);
+
+    // Save canvas state to database
+    const saveCanvas = async () => {
+        if (!canvas || !id || id === 'new') return;
+
+        try {
+            setIsSaving(true);
+
+            const canvasJSON = canvas.toJSON(['id', 'selectable']);
+
+            const updateData = {
+                canvasData: JSON.stringify(canvasJSON),
+                backgroundColor: canvas.backgroundColor,
+                lastEdited: new Date().toISOString(),
+            };
+            console.log("Saving canvas data:", updateData);
+            try {
+                await updateProject({
+                    id,
+                    data: updateData,
+                }).unwrap();
+
+                toast.success('Project saved successfully');
+            } catch (apiError: any) {
+                console.error('API Error saving canvas:', apiError);
+                let errorMessage = 'Failed to save project';
+
+                if (apiError.data?.message) {
+                    errorMessage = apiError.data.message;
+                }
+
+                toast.error(errorMessage);
+                throw apiError; 
+            }
+        } catch (error) {
+            console.error('Error saving canvas:', error);
+            toast.error('Failed to save project. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const addRectangle = () => {
         if (canvas) {
@@ -573,6 +644,29 @@ const CanvasEditor = () => {
                                     title="Duplicate selected object (Ctrl+D)"
                                 >
                                     <span className="text-white">Duplicate</span>
+                                </button>
+
+                                <div className="mx-4 h-8 w-px bg-gray-200"></div>
+
+                                <button
+                                    onClick={saveCanvas}
+                                    disabled={isSaving}
+                                    className={`${
+                                        isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'
+                                    } text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center gap-2`}
+                                    title="Save project (Ctrl+S)"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <Loader size="sm" text="" />
+                                            <span>Saving...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaRegSave className="text-white" />
+                                            <span>Save</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
