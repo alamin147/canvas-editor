@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { FaRegSquare, FaRegCircle } from 'react-icons/fa';
 import { PiTextAa } from "react-icons/pi";
 import { TbLine } from "react-icons/tb";
+import { FaTrash } from "react-icons/fa";
 
 const CanvasEditor = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -10,6 +11,7 @@ const CanvasEditor = () => {
     const [fillColor, setFillColor] = useState("#3498db");
     const [isDrawingLine, setIsDrawingLine] = useState(false);
     const [line, setLine]: any = useState();
+    const [hasSelection, setHasSelection] = useState(false);
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -22,12 +24,32 @@ const CanvasEditor = () => {
             initCanvas.renderAll();
             setCanvas(initCanvas);
 
+            initCanvas.on('selection:created', () => setHasSelection(true));
+            initCanvas.on('selection:updated', () => setHasSelection(true));
+            initCanvas.on('selection:cleared', () => setHasSelection(false));
+
             return () => {
                 initCanvas.dispose();
             };
         }
     }, []);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && hasSelection) {
+
+                if (document.activeElement?.tagName !== 'INPUT' &&
+                   document.activeElement?.tagName !== 'TEXTAREA') {
+                    deleteSelectedObject();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [hasSelection, canvas]);
 
     const addRectangle = () => {
         if (canvas) {
@@ -89,12 +111,11 @@ const CanvasEditor = () => {
 
     const addLine = () => {
         if (canvas) {
-            
+
             const line = new Line([50, 50, 200, 200], {
                 stroke: fillColor,
                 strokeWidth: 2,
                 selectable: true,
-                evented: true,
             });
 
             canvas.add(line);
@@ -134,6 +155,27 @@ const CanvasEditor = () => {
             line.set({ selectable: true });
             setIsDrawingLine(false);
             console.log("Line drawing ended");
+        }
+    };
+
+    const deleteSelectedObject = () => {
+        if (canvas) {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+
+                if (activeObject.type === 'activeSelection') {
+                    activeObject.forEachObject((obj: any) => {
+                        canvas.remove(obj);
+                    });
+                } else {
+
+                    canvas.remove(activeObject);
+                }
+                canvas.discardActiveObject();
+                canvas.renderAll();
+                setHasSelection(false);
+                console.log("Object(s) deleted");
+            }
         }
     };
 
@@ -190,6 +232,19 @@ const CanvasEditor = () => {
                                         <span className="text-xs text-gray-500 ml-1">{fillColor}</span>
                                     </div>
                                 </div>
+
+                                <div className="mx-4 h-8 w-px bg-gray-200"></div>
+
+                                <button
+                                    onClick={deleteSelectedObject}
+                                    disabled={!hasSelection}
+                                    className={`${
+                                        hasSelection ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-300 cursor-not-allowed'
+                                    } text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center gap-2`}
+                                    title="Delete selected object"
+                                >
+                                    <FaTrash className="text-white" />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -205,7 +260,7 @@ const CanvasEditor = () => {
                         onMouseUp={endLine}
                     />
                 </div>
-                <p className="text-gray-500 text-sm mt-4">Click on buttons to add shapes to the canvas</p>
+                <p className="text-gray-500 text-sm mt-4">Click on buttons to add shapes to the canvas. Select a shape and press Delete key or use the trash button to remove it.</p>
             </div>
         </>
     );
