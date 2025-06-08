@@ -3,19 +3,41 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCreateProjectMutation } from "@/redux/features/project/projectApi";
+import { toast } from "react-hot-toast";
 
 const CreateProject = () => {
   const navigate = useNavigate();
   const [projectName, setProjectName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateProject = () => {
+  const [createProject] = useCreateProjectMutation();
+
+  const handleCreateProject = async () => {
+    if (!projectName.trim()) return;
+
     setIsCreating(true);
 
-    setTimeout(() => {
+    try {
+    
+      const payload = {
+        title: projectName,
+        canvasData: JSON.stringify([]),
+        backgroundColor: "#f8f9fa",
+        width: 1400,
+        height: 600
+      };
+
+      const response = await createProject(payload).unwrap();
+
+      toast.success("Project created successfully!");
+      navigate(`/editor/${response.data._id}`);
+    } catch (error) {
+      console.error("Failed to create project:", error);
+      toast.error("Failed to create project. Please try again.");
+    } finally {
       setIsCreating(false);
-      navigate("/editor/new");
-    }, 1000);
+    }
   };
 
   return (
