@@ -1,9 +1,11 @@
-import { Canvas, Circle, Rect, IText, Line } from 'fabric';
+import { Canvas, Circle, Rect, IText, Line, ActiveSelection } from 'fabric';
 import { useState, useRef, useEffect } from "react";
 import { FaRegSquare, FaRegCircle } from 'react-icons/fa';
 import { PiTextAa } from "react-icons/pi";
 import { TbLine } from "react-icons/tb";
 import { FaTrash } from "react-icons/fa";
+import { MdFormatColorFill, MdBorderColor } from 'react-icons/md';
+import { MdContentCopy, MdContentPaste } from 'react-icons/md';
 
 const CanvasEditor = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -12,6 +14,9 @@ const CanvasEditor = () => {
     const [isDrawingLine, setIsDrawingLine] = useState(false);
     const [line, setLine]: any = useState();
     const [hasSelection, setHasSelection] = useState(false);
+    const [selectedObjectColor, setSelectedObjectColor] = useState("#000000");
+    const [selectedObjectType, setSelectedObjectType] = useState<"fill" | "stroke" | null>(null);
+    const [copiedObjects, setCopiedObjects] = useState<any[]>([]);
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -24,9 +29,27 @@ const CanvasEditor = () => {
             initCanvas.renderAll();
             setCanvas(initCanvas);
 
-            initCanvas.on('selection:created', () => setHasSelection(true));
-            initCanvas.on('selection:updated', () => setHasSelection(true));
-            initCanvas.on('selection:cleared', () => setHasSelection(false));
+
+            initCanvas.on('selection:created', (e:any) => {
+                setHasSelection(true);
+                const selectedObject = e.selected?.[0] || e.target;
+                if (selectedObject) {
+                    updateSelectedObjectState(selectedObject);
+                }
+            });
+
+            initCanvas.on('selection:updated', (e:any) => {
+                setHasSelection(true);
+                const selectedObject = e.selected?.[0] || e.target;
+                if (selectedObject) {
+                    updateSelectedObjectState(selectedObject);
+                }
+            });
+
+            initCanvas.on('selection:cleared', () => {
+                setHasSelection(false);
+                setSelectedObjectType(null);
+            });
 
             return () => {
                 initCanvas.dispose();
@@ -35,13 +58,42 @@ const CanvasEditor = () => {
     }, []);
 
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.key === 'Delete' || e.key === 'Backspace') && hasSelection) {
+        if (!canvas) return;
 
-                if (document.activeElement?.tagName !== 'INPUT' &&
-                   document.activeElement?.tagName !== 'TEXTAREA') {
-                    deleteSelectedObject();
-                }
+        const handleKeyDown = (e: KeyboardEvent) => {
+
+            if (document.activeElement?.tagName === 'INPUT' ||
+                document.activeElement?.tagName === 'TEXTAREA') {
+                return;
+            }
+
+
+            if ((e.key === 'Delete' || e.key === 'Backspace') && hasSelection) {
+                e.preventDefault();
+                deleteSelectedObject();
+                return;
+            }
+
+
+            if (e.key === 'c' && (e.ctrlKey || e.metaKey) && hasSelection) {
+                e.preventDefault();
+                copySelectedObjects();
+                return;
+            }
+
+
+            if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                pasteObjects();
+                return;
+            }
+
+
+            if (e.key === 'd' && (e.ctrlKey || e.metaKey) && hasSelection) {
+                e.preventDefault();
+                copySelectedObjects();
+                setTimeout(() => pasteObjects(), 10);
+                return;
             }
         };
 
@@ -49,7 +101,7 @@ const CanvasEditor = () => {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [hasSelection, canvas]);
+    }, [hasSelection, canvas, copiedObjects]);
 
     const addRectangle = () => {
         if (canvas) {
@@ -179,6 +231,245 @@ const CanvasEditor = () => {
         }
     };
 
+
+
+
+    const updateObjectColor = (color: string) => {
+        if (canvas) {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                if (activeObject.type === 'line') {
+                    activeObject.set({ stroke: color });
+                } else {
+                    activeObject.set({ fill: color });
+                }
+                canvas.renderAll();
+                setSelectedObjectColor(color);
+                console.log("Object color updated to:", color);
+            }
+        }
+    };
+
+
+    const toggleColorProperty = () => {
+        if (selectedObjectType === "fill") {
+            setSelectedObjectType("stroke");
+            const activeObject = canvas.getActiveObject();
+            setSelectedObjectColor(activeObject.stroke || "#000000");
+        } else {
+            setSelectedObjectType("fill");
+            const activeObject = canvas.getActiveObject();
+            setSelectedObjectColor(activeObject.fill || "#000000");
+        }
+    };
+
+
+    const copySelectedObjects = () => {
+        if (!canvas || !hasSelection) return;
+
+        const activeObject = canvas.getActiveObject();
+        if (!activeObject) return;
+
+        try {
+
+            if (activeObject.type === 'activeSelection') {
+
+                const objectsData: any[] = [];
+                activeObject.forEachObject((obj: any) => {
+                    const objData: any = {
+                        type: obj.type,
+                        left: obj.left,
+                        top: obj.top,
+                        width: obj.width,
+                        height: obj.height,
+                        scaleX: obj.scaleX,
+                        scaleY: obj.scaleY,
+                        angle: obj.angle,
+                        fill: obj.fill,
+                        stroke: obj.stroke,
+                        strokeWidth: obj.strokeWidth,
+                    };
+
+
+                    if (obj.type === 'circle') {
+                        objData.radius = obj.radius;
+                    } else if (obj.type === 'i-text') {
+                        objData.text = obj.text;
+                        objData.fontSize = obj.fontSize;
+                        objData.fontFamily = obj.fontFamily;
+                        objData.fontStyle = obj.fontStyle;
+                        objData.fontWeight = obj.fontWeight;
+                        objData.textAlign = obj.textAlign;
+                        objData.lineHeight = obj.lineHeight;
+                    } else if (obj.type === 'line') {
+                        objData.x1 = obj.x1;
+                        objData.y1 = obj.y1;
+                        objData.x2 = obj.x2;
+                        objData.y2 = obj.y2;
+                    }
+
+                    objectsData.push(objData);
+                });
+                setCopiedObjects(objectsData);
+                console.log("Multiple objects copied:", objectsData.length);
+            } else {
+
+                const objData: any = {
+                    type: activeObject.type,
+                    left: activeObject.left,
+                    top: activeObject.top,
+                    width: activeObject.width,
+                    height: activeObject.height,
+                    scaleX: activeObject.scaleX,
+                    scaleY: activeObject.scaleY,
+                    angle: activeObject.angle,
+                    fill: activeObject.fill,
+                    stroke: activeObject.stroke,
+                    strokeWidth: activeObject.strokeWidth,
+                };
+
+
+                if (activeObject.type === 'circle') {
+                    objData.radius = activeObject.radius;
+                } else if (activeObject.type === 'i-text') {
+                    objData.text = activeObject.text;
+                    objData.fontSize = activeObject.fontSize;
+                    objData.fontFamily = activeObject.fontFamily;
+                    objData.fontStyle = activeObject.fontStyle;
+                    objData.fontWeight = activeObject.fontWeight;
+                    objData.textAlign = activeObject.textAlign;
+                    objData.lineHeight = activeObject.lineHeight;
+                } else if (activeObject.type === 'line') {
+                    objData.x1 = activeObject.x1;
+                    objData.y1 = activeObject.y1;
+                    objData.x2 = activeObject.x2;
+                    objData.y2 = activeObject.y2;
+                }
+
+                setCopiedObjects([objData]);
+                console.log("Object copied:", objData.type);
+            }
+        } catch (error) {
+            console.error("Error copying objects:", error);
+        }
+    };
+
+
+    const pasteObjects = () => {
+        if (!canvas || copiedObjects.length === 0) return;
+
+        try {
+
+            canvas.discardActiveObject();
+
+
+            const newObjects: any[] = [];
+            const offset = 20;
+
+            copiedObjects.forEach((objData: any) => {
+                let newObj;
+
+                switch(objData.type) {
+                    case 'rect':
+                        newObj = new Rect({
+                            left: objData.left + offset,
+                            top: objData.top + offset,
+                            width: objData.width,
+                            height: objData.height,
+                            scaleX: objData.scaleX,
+                            scaleY: objData.scaleY,
+                            angle: objData.angle,
+                            fill: objData.fill,
+                            stroke: objData.stroke,
+                            strokeWidth: objData.strokeWidth
+                        });
+                        break;
+                    case 'circle':
+                        newObj = new Circle({
+                            left: objData.left + offset,
+                            top: objData.top + offset,
+                            radius: objData.radius,
+                            scaleX: objData.scaleX,
+                            scaleY: objData.scaleY,
+                            angle: objData.angle,
+                            fill: objData.fill,
+                            stroke: objData.stroke,
+                            strokeWidth: objData.strokeWidth
+                        });
+                        break;
+                    case 'i-text':
+                        newObj = new IText(objData.text || "Text", {
+                            left: objData.left + offset,
+                            top: objData.top + offset,
+                            width: objData.width,
+                            height: objData.height,
+                            scaleX: objData.scaleX,
+                            scaleY: objData.scaleY,
+                            angle: objData.angle,
+                            fill: objData.fill,
+                            stroke: objData.stroke,
+                            strokeWidth: objData.strokeWidth,
+                            fontSize: objData.fontSize,
+                            fontFamily: objData.fontFamily,
+                            fontStyle: objData.fontStyle,
+                            fontWeight: objData.fontWeight,
+                            textAlign: objData.textAlign,
+                            lineHeight: objData.lineHeight
+                        });
+                        break;
+                    case 'line':
+                        newObj = new Line([objData.x1, objData.y1, objData.x2, objData.y2], {
+                            left: objData.left + offset,
+                            top: objData.top + offset,
+                            scaleX: objData.scaleX,
+                            scaleY: objData.scaleY,
+                            angle: objData.angle,
+                            fill: objData.fill,
+                            stroke: objData.stroke,
+                            strokeWidth: objData.strokeWidth
+                        });
+                        break;
+                    default:
+                        console.warn(`Unknown object type: ${objData.type}`);
+                        return;
+                }
+
+
+            canvas.add(newObj);
+            newObjects.push(newObj);
+            console.log("Object pasted:", newObj.type);
+        });
+
+
+            if (newObjects.length > 1) {
+                const selection = new ActiveSelection(newObjects, {
+                    canvas: canvas
+                });
+                canvas.setActiveObject(selection);
+            } else if (newObjects.length === 1) {
+                canvas.setActiveObject(newObjects[0]);
+            }
+
+            canvas.renderAll();
+        } catch (error) {
+            console.error("Error pasting objects:", error);
+        }
+    };
+
+
+    const updateSelectedObjectState = (obj: any) => {
+        if (!obj) return;
+
+        if (obj.type === 'line') {
+            setSelectedObjectType("stroke");
+            setSelectedObjectColor(obj.stroke || "#000000");
+        } else {
+
+            setSelectedObjectType("fill");
+            setSelectedObjectColor(obj.fill || "#000000");
+        }
+    };
+
     return (
         <>
             <div className="flex flex-col items-center w-full h-screen bg-gray-50 p-6">
@@ -245,12 +536,50 @@ const CanvasEditor = () => {
                                 >
                                     <FaTrash className="text-white" />
                                 </button>
+
+                                <button
+                                    onClick={copySelectedObjects}
+                                    disabled={!hasSelection}
+                                    className={`${
+                                        hasSelection ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 cursor-not-allowed'
+                                    } text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center gap-2`}
+                                    title="Copy selected object (Ctrl+C)"
+                                >
+                                    <MdContentCopy className="text-white" />
+                                </button>
+
+                                <button
+                                    onClick={pasteObjects}
+                                    disabled={copiedObjects.length === 0}
+                                    className={`${
+                                        copiedObjects.length > 0 ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-300 cursor-not-allowed'
+                                    } text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center gap-2`}
+                                    title="Paste copied object (Ctrl+V)"
+                                >
+                                    <MdContentPaste className="text-white" />
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        if (hasSelection) {
+                                            copySelectedObjects();
+                                            pasteObjects();
+                                        }
+                                    }}
+                                    disabled={!hasSelection}
+                                    className={`${
+                                        hasSelection ? 'bg-purple-500 hover:bg-purple-600' : 'bg-gray-300 cursor-not-allowed'
+                                    } text-white font-medium py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center gap-2`}
+                                    title="Duplicate selected object (Ctrl+D)"
+                                >
+                                    <span className="text-white">Duplicate</span>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="canvas-container bg-white p-4 rounded-xl shadow-md">
+                <div className="canvas-container bg-white p-4 rounded-xl shadow-md relative">
                     <canvas
                         id="canvas"
                         ref={canvasRef}
@@ -259,8 +588,58 @@ const CanvasEditor = () => {
                         onMouseMove={isDrawingLine ? drawLine : undefined}
                         onMouseUp={endLine}
                     />
+
+                    {/* Color editor menu that appears when an object is selected */}
+                    {hasSelection && (
+                        <div className="absolute top-8 right-8 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-10">
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-medium">
+                                        Edit {selectedObjectType === "fill" ? "Fill" : "Stroke"} Color
+                                    </h3>
+                                    <button
+                                        onClick={toggleColorProperty}
+                                        className="text-blue-600 hover:text-blue-800 text-sm"
+                                        title="Toggle between fill and stroke"
+                                    >
+                                        {selectedObjectType === "fill" ? (
+                                            <MdBorderColor className="h-5 w-5" />
+                                        ) : (
+                                            <MdFormatColorFill className="h-5 w-5" />
+                                        )}
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="color"
+                                        value={selectedObjectColor}
+                                        onChange={(e) => updateObjectColor(e.target.value)}
+                                        className="w-8 h-8 rounded overflow-hidden cursor-pointer border-0"
+                                    />
+                                    <span className="text-xs text-gray-600">{selectedObjectColor}</span>
+                                </div>
+
+                                <div className="grid grid-cols-6 gap-2 mt-1">
+                                    {["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF",
+                                      "#000000", "#FFFFFF", "#888888", "#FF8800", "#8800FF", "#00FF88"].map(color => (
+                                        <div
+                                            key={color}
+                                            onClick={() => updateObjectColor(color)}
+                                            className="w-6 h-6 rounded-full cursor-pointer border border-gray-200"
+                                            style={{ backgroundColor: color }}
+                                            title={color}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <p className="text-gray-500 text-sm mt-4">Click on buttons to add shapes to the canvas. Select a shape and press Delete key or use the trash button to remove it.</p>
+                <p className="text-gray-500 text-sm mt-4">
+                    Click on buttons to add shapes to the canvas. Select a shape and press Delete key or use the trash button to remove it.
+                    Click on a shape to select it and edit its colors. Use the copy and paste buttons or keyboard shortcuts (Ctrl+C / Ctrl+V) to duplicate shapes.
+                    You can also use the Duplicate button or press Ctrl+D to quickly duplicate selected objects.
+                </p>
             </div>
         </>
     );
