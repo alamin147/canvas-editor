@@ -108,7 +108,7 @@ const Project = () => {
                     </div>
                     <h3 className="font-medium text-gray-800">{project.title}</h3>
                     <p className="text-gray-500 text-sm mt-1">
-                      Last edited {formatDistanceToNow(new Date(project.lastEdited || project.updatedAt), { addSuffix: true })}
+                      Last edited {project.updatedAt}
                     </p>
                   </div>
                 ))}

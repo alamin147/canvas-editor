@@ -1,22 +1,19 @@
 import { Canvas, Circle, Rect, IText, Line, ActiveSelection } from 'fabric';
 import { useState, useRef, useEffect } from "react";
-import { FaRegSquare, FaRegCircle, FaSave } from 'react-icons/fa';
+import { FaRegSquare, FaRegCircle } from 'react-icons/fa';
 import { PiTextAa } from "react-icons/pi";
 import { TbLine } from "react-icons/tb";
 import { FaTrash } from "react-icons/fa";
 import { MdFormatColorFill, MdBorderColor } from 'react-icons/md';
 import { MdContentCopy, MdContentPaste } from 'react-icons/md';
-
-
 import { FaRegSave } from 'react-icons/fa';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useGetProjectQuery, useUpdateProjectMutation } from '@/redux/features/project/projectApi';
 import Loader from '@/components/ui/Loader';
 import { toast } from 'react-hot-toast';
 
 const CanvasEditor = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [canvas, setCanvas]: any = useState();
     const [fillColor, setFillColor] = useState("#3498db");
@@ -27,7 +24,7 @@ const CanvasEditor = () => {
     const [selectedObjectType, setSelectedObjectType] = useState<"fill" | "stroke" | null>(null);
     const [copiedObjects, setCopiedObjects] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
-    const [projectTitle, setProjectTitle] = useState("");
+    const [ ,setProjectTitle] = useState("");
 
     // Get project data if editing an existing project
     const { data: projectData, isLoading: isLoadingProject, isError: projectError } =
@@ -145,7 +142,6 @@ const CanvasEditor = () => {
             const updateData = {
                 canvasData: JSON.stringify(canvasJSON),
                 backgroundColor: canvas.backgroundColor,
-                lastEdited: new Date().toISOString(),
             };
             console.log("Saving canvas data:", updateData);
             try {
@@ -164,7 +160,7 @@ const CanvasEditor = () => {
                 }
 
                 toast.error(errorMessage);
-                throw apiError; 
+                throw apiError;
             }
         } catch (error) {
             console.error('Error saving canvas:', error);

@@ -47,9 +47,6 @@ const updateProject = async (userId: string, projectId: string, payload: Record<
     throw new AppError(httpStatus.NOT_FOUND, 'Project not found');
   }
 
-  // Update lastEdited timestamp
-  payload.lastEdited = new Date();
-
   const result = await Project.findByIdAndUpdate(
     projectId,
     payload,
