@@ -27,7 +27,7 @@ const projectApi = baseApi.injectEndpoints({
         url: `/projects/${id}`,
         method: 'GET',
       }),
-      providesTags: (_result, _error, id) => [{ type: 'Projects', id }],
+      providesTags: ['Project'],
     }),
 
     // Update a project
@@ -37,10 +37,7 @@ const projectApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: (_result, _error, { id }) => [
-        { type: 'Projects', id },
-        'Projects',
-      ],
+      invalidatesTags: ['Project']
     }),
 
     // Delete a project
