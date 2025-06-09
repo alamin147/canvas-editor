@@ -98,6 +98,18 @@ const CanvasEditor = () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [canvas, id]);
+
+    // This useEffect ensures canvas is properly rendered after it's fully loaded
+    useEffect(() => {
+        if (canvas && !isLoadingProject) {
+            // Small delay to ensure canvas is ready before force rendering
+            const timer = setTimeout(() => {
+                canvas.requestRenderAll();
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [canvas, isLoadingProject]);
     useEffect(() => {
         if (projectData?.data && canvas) {
             try {
@@ -115,7 +127,20 @@ const CanvasEditor = () => {
                         canvas.clear();
 
                         canvas.loadFromJSON(canvasData, () => {
-                            canvas.renderAll();
+
+                            canvas?.getObjects()?.forEach((obj:any) => {
+                                obj.setCoords();
+                                canvas.bringToFront(obj);
+                            });
+
+                            // Initial render
+                            canvas.requestRenderAll();
+
+                            setTimeout(() => {
+                                canvas.requestRenderAll();
+                                console.log('Canvas rendered with delay to ensure all objects are visible');
+                            }, 100);
+
                             console.log('Canvas loaded from saved data');
                         });
                     } catch (error) {
