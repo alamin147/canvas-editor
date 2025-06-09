@@ -40,7 +40,6 @@ const getAllProjects = catchAsync(async (req: Request, res: Response) => {
 
 const updateProject = catchAsync(async (req: Request, res: Response) => {
 
-    console.log("first")
   const { projectId } = req.params;
   const result = await ProjectServices.updateProject(req.user.userId, projectId, req.body);
 

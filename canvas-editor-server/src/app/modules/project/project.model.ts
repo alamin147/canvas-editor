@@ -28,11 +28,6 @@ const projectSchema = new Schema(
       ref: 'User',
       required: true,
     },
-
-    lastEdited: {
-      type: Date,
-      default: Date.now,
-    }
   },
   { timestamps: true }
 );
