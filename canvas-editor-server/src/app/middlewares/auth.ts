@@ -32,20 +32,20 @@ const users = await User.find({
     const user = users[0];
 
   if (!users) {
-    throw new AppError(httpStatus.NOT_FOUND, 'This user is not found !');
+    throw new AppError(httpStatus.NOT_FOUND, 'This user is not found!');
   }
 
     // checking if the user is blocked
     const userStatus = user?.status;
 
     if (userStatus === 'inactive') {
-      throw new AppError(httpStatus.FORBIDDEN, 'This user is inactive ! !');
+      throw new AppError(httpStatus.FORBIDDEN, 'This user is inactive!');
     }
 
     if (requiredRoles && !requiredRoles.includes(role)) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        'You are not authorized  hi!',
+        'You are not authorized!',
       );
     }
     req.user = decoded as JwtPayload;
