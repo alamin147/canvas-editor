@@ -11,7 +11,7 @@ import Home from '@/pages/home/Home.tsx'
 import Login from './pages/login/Login.tsx'
 import Register from './pages/register/Register.tsx'
 import Project from './pages/project/Project.tsx'
-
+import { SocketProvider } from './provider/SocketProvider.tsx'
 import CreateProject from './pages/project/CreateProject.tsx'
 import CanvasEditor from './pages/canvas-editor/CanvasEditor.tsx'
 
@@ -52,10 +52,12 @@ const router=createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
- <Provider store={store}>
+    <Provider store={store}>
       <Toaster />
       <PersistGate loading={null} persistor={persistor}>
-        <RouterProvider router={router}></RouterProvider>
+        <SocketProvider>
+          <RouterProvider router={router}></RouterProvider>
+        </SocketProvider>
       </PersistGate>
     </Provider>
   </StrictMode>,
