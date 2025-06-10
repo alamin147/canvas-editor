@@ -11,6 +11,11 @@ import { useParams } from 'react-router-dom';
 import { useGetProjectQuery, useUpdateProjectMutation } from '@/redux/features/project/projectApi';
 import Loader from '@/components/ui/Loader';
 import { toast } from 'react-hot-toast';
+import { useCollabCanvas } from './hooks/useCollabCanvas';
+import CollaborationPanel from './components/CollaborationPanel';
+import UserCursor from './components/UserCursor';
+import { useCanvasSync } from './hooks/useCanvasSync';
+import { useSocket } from '@/provider/SocketProvider';
 
 const CanvasEditor = () => {
     const { id } = useParams<{ id: string }>();
@@ -24,13 +29,26 @@ const CanvasEditor = () => {
     const [selectedObjectType, setSelectedObjectType] = useState<"fill" | "stroke" | null>(null);
     const [copiedObjects, setCopiedObjects] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
-    const [ ,setProjectTitle] = useState("");
+    const [, setProjectTitle] = useState("");
+    const canvasContainerRef = useRef<HTMLDivElement>(null);
 
     // Get project data if editing an existing project
     const { data: projectData, isLoading: isLoadingProject, isError: projectError } =
         id && id !== 'new' ? useGetProjectQuery(id) : { data: null, isLoading: false, isError: false };
 
     const [updateProject] = useUpdateProjectMutation();
+
+    // Socket connection
+    const { socket, isConnected } = useSocket();
+
+    // Use the collaboration hook
+    const { collaborators, inviteUserToProject } = useCollabCanvas({
+        projectId: id,
+        canvas
+    });
+
+    // Use the canvas sync hook for object synchronization
+    useCanvasSync(canvas, socket, id, isConnected);
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -694,7 +712,7 @@ const CanvasEditor = () => {
                     </div>
                 </div>
 
-                <div className="canvas-container bg-white p-4 rounded-xl shadow-md relative">
+                <div className="canvas-container bg-white p-4 rounded-xl shadow-md relative" ref={canvasContainerRef}>
                     <canvas
                         id="canvas"
                         ref={canvasRef}
@@ -703,6 +721,25 @@ const CanvasEditor = () => {
                         onMouseMove={isDrawingLine ? drawLine : undefined}
                         onMouseUp={endLine}
                     />
+
+                    {/* Display collaborator cursors */}
+                    {collaborators.map((user) => (
+                        <UserCursor
+                            key={user.socketId}
+                            position={user.mousePosition}
+                            username={user.username}
+                            color={user.userColor}
+                        />
+                    ))}
+
+                    {/* Collaboration panel */}
+                    {id && id !== 'new' && (
+                        <CollaborationPanel
+                            projectId={id}
+                            collaborators={collaborators}
+                            onInviteUser={inviteUserToProject}
+                        />
+                    )}
 
                     {/* Color editor menu that appears when an object is selected */}
                     {hasSelection && (
@@ -754,6 +791,10 @@ const CanvasEditor = () => {
                     Click on buttons to add shapes to the canvas. Select a shape and press Delete key or use the trash button to remove it.
                     Click on a shape to select it and edit its colors. Use the copy and paste buttons or keyboard shortcuts (Ctrl+C / Ctrl+V) to duplicate shapes.
                     You can also use the Duplicate button or press Ctrl+D to quickly duplicate selected objects.
+                </p>
+                <p className="text-blue-500 text-sm mt-2">
+                    <strong>Collaboration:</strong> Use the Collaborators button at the top-right to invite others to edit this canvas with you.
+                    You'll see their cursor positions and changes in real-time. All edits are synchronized automatically.
                 </p>
             </div>
         </>
