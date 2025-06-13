@@ -38,4 +38,23 @@ router.delete(
   ProjectControllers.deleteProject,
 );
 
+// Contributor management routes
+router.post(
+  '/:projectId/contributors',
+  auth('user'),
+  ProjectControllers.addContributor,
+);
+
+router.get(
+  '/:projectId/contributors',
+  auth('user'),
+  ProjectControllers.getContributors,
+);
+
+router.delete(
+  '/:projectId/contributors/:contributorId',
+  auth('user'),
+  ProjectControllers.removeContributor,
+);
+
 export const ProjectRoutes = router;
