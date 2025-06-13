@@ -63,10 +63,53 @@ const deleteProject = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const addContributor = catchAsync(async (req: Request, res: Response) => {
+  const { projectId } = req.params;
+  const { email } = req.body;
+
+  const result = await ProjectServices.addContributor(req.user.userId, projectId, email);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Contributor added successfully',
+    data: result,
+  });
+});
+
+const removeContributor = catchAsync(async (req: Request, res: Response) => {
+  const { projectId, contributorId } = req.params;
+
+  const result = await ProjectServices.removeContributor(req.user.userId, projectId, contributorId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Contributor removed successfully',
+    data: result,
+  });
+});
+
+const getContributors = catchAsync(async (req: Request, res: Response) => {
+  const { projectId } = req.params;
+
+  const result = await ProjectServices.getContributors(req.user.userId, projectId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Contributors retrieved successfully',
+    data: result,
+  });
+});
+
 export const ProjectControllers = {
   createProject,
   getProjectById,
   getAllProjects,
   updateProject,
   deleteProject,
+  addContributor,
+  removeContributor,
+  getContributors,
 };
