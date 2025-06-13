@@ -7,6 +7,7 @@ const createProjectValidationSchema = z.object({
     backgroundColor: z.string().optional(),
     width: z.number().optional(),
     height: z.number().optional(),
+    contributors: z.array(z.string()).optional(),
   }).strict(),
 });
 
@@ -17,6 +18,7 @@ const updateProjectValidationSchema = z.object({
     backgroundColor: z.string().optional(),
     width: z.number().optional(),
     height: z.number().optional(),
+    contributors: z.array(z.string()).optional(),
   }).strict(),
 });
 
