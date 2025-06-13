@@ -48,6 +48,34 @@ const projectApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Projects'],
     }),
+
+    // Get project contributors
+    getProjectContributors: builder.query({
+      query: (id) => ({
+        url: `/projects/${id}/contributors`,
+        method: 'GET',
+      }),
+      providesTags: ['Project'],
+    }),
+
+    // Add a contributor to a project
+    addContributor: builder.mutation({
+      query: ({ projectId, email }) => ({
+        url: `/projects/${projectId}/contributors`,
+        method: 'POST',
+        body: { email },
+      }),
+      invalidatesTags: ['Project'],
+    }),
+
+    // Remove a contributor from a project
+    removeContributor: builder.mutation({
+      query: ({ projectId, contributorId }) => ({
+        url: `/projects/${projectId}/contributors/${contributorId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Project'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -58,4 +86,7 @@ export const {
   useGetProjectQuery,
   useUpdateProjectMutation,
   useDeleteProjectMutation,
+  useGetProjectContributorsQuery,
+  useAddContributorMutation,
+  useRemoveContributorMutation,
 } = projectApi;
