@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { Canvas as FabricCanvas } from 'fabric';
 import {util} from 'fabric';
 import { useGetMeQuery } from '@/redux/features/user/userApi';
+import { useAddContributorMutation } from '@/redux/features/project/projectApi';
 
 interface CollaboratorUser {
   socketId: string;
@@ -145,7 +146,6 @@ const user = data?.data;
             break;
         }
 
-        // Find which user made this change to show feedback
         const userWhoChanged = collaborators.find(u => u.socketId === socketId);
         if (userWhoChanged) {
           // Update the user's cursor - could show a small animation or feedback
@@ -188,7 +188,7 @@ const user = data?.data;
           position: { x: pointer.x, y: pointer.y }
         });
         throttleRef.current = null;
-      }, 50); // Send updates at most every 50ms
+      }, 50);
     };
 
     // Add event listener for mouse movement
@@ -202,16 +202,13 @@ const user = data?.data;
     };
   }, [canvas, socket, isConnected, projectId]);
 
-  // Set up object event tracking for collaboration
   useEffect(() => {
     if (!canvas || !socket || !isConnected || !projectId) return;
 
-    // Helper function to send object updates
     const sendObjectUpdate = (operation: CanvasOperation, obj: any) => {
       if (!socket || !projectId) return;
 
       try {
-        // Ensure each object has a unique ID
         if (!obj.id) {
           obj.id = `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           console.log(`Assigned ID to object: ${obj.id}`);
@@ -239,7 +236,6 @@ const user = data?.data;
     const handleObjectAdded = (e: any) => {
       const obj = e.target;
       if (obj && !obj._fromOtherUser) {
-        // Avoid sending updates for objects loaded on initialization
         if (obj._onInitialLoad) return;
         sendObjectUpdate('add', obj);
       }
@@ -276,15 +272,18 @@ const user = data?.data;
   }, [canvas, socket, isConnected, projectId]);
 
   // Function to invite a user
+  const [addContributor] = useAddContributorMutation();
+
   const inviteUserToProject = async (email: string) => {
-    // Here you would implement the API call to invite a user
-    // This is just a placeholder for demonstration
+    if (!projectId) {
+      toast.error('Project ID is missing');
+      return false;
+    }
+
     try {
-      // Mock API call - you'll need to implement this
-      // const response = await inviteUserAPI(projectId, email);
+      await addContributor({ projectId, email }).unwrap();
       toast.success(`Invitation sent to ${email}`);
 
-      // Add the invited user to collaborators with offline status
       setCollaborators(prev => [
         ...prev,
         {
@@ -298,9 +297,15 @@ const user = data?.data;
       ]);
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to invite user:', error);
-      toast.error('Failed to send invitation');
+
+      let errorMessage = 'Failed to send invitation';
+      if (error.data?.message) {
+        errorMessage = error.data.message;
+      }
+
+      toast.error(errorMessage);
       return false;
     }
   };
