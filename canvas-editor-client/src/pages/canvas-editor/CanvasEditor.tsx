@@ -32,7 +32,8 @@ const CanvasEditor = () => {
     const [, setProjectTitle] = useState("");
     const canvasContainerRef = useRef<HTMLDivElement>(null);
 
-    // Get project data if editing an existing project
+    // Get project data if editing an existing project]
+    //@ts-ignore
     const { data: projectData, isLoading: isLoadingProject, isError: projectError } =
         id && id !== 'new' ? useGetProjectQuery(id) : { data: null, isLoading: false, isError: false };
 
