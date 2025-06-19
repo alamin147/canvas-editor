@@ -4,3 +4,5 @@ canvas-editor-client/.env
 canvas-editor-server/node_modules
 canvas-editor-server/dist
 canvas-editor-server/.env
+canvas-editor-server/.vercel
+canvas-editor-client/.vercel

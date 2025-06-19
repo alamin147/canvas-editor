@@ -6,7 +6,6 @@ import Loader from "@/components/ui/Loader";
 import { toast } from "react-hot-toast";
 import { FaTrash } from "react-icons/fa";
 import { useState } from "react";
-import { formatDistanceToNow } from 'date-fns';
 
 const Project = () => {
   const navigate = useNavigate();
